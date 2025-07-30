@@ -8,6 +8,7 @@ import android.annotation.SuppressLint
 import android.appwidget.AppWidgetManager
 import android.content.Context
 import android.content.IntentFilter
+import android.content.SharedPreferences
 import android.content.pm.ActivityInfo
 import android.content.res.Configuration
 import android.os.Build
@@ -20,7 +21,9 @@ import androidx.annotation.RequiresApi
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.platform.ComposeView
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import androidx.navigation.fragment.findNavController
 import kotlinx.coroutines.launch
@@ -66,6 +69,15 @@ import org.mozilla.fenix.utils.maybeShowAddSearchWidgetPrompt
  */
 class OnboardingFragment : Fragment() {
     private val logger = Logger("OnboardingFragment")
+
+    private val removeMarketingPage by lazy {
+        RemoveMarketingPage(
+            requireContext().getString(R.string.pref_key_should_show_marketing_onboarding),
+            pagesToDisplay,
+            requireComponents.distributionIdManager,
+            requireContext().settings(),
+        )
+    }
 
     private val termsOfServiceEventHandler by lazy {
         DefaultOnboardingTermsOfServiceEventHandler(
@@ -143,10 +155,18 @@ class OnboardingFragment : Fragment() {
         inflater: LayoutInflater,
         container: ViewGroup?,
         savedInstanceState: Bundle?,
-    ): View = ComposeView(requireContext()).apply {
-        setContent {
-            FirefoxTheme {
-                ScreenContent()
+    ): View {
+        viewLifecycleOwner.lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                removeMarketingPage.launch(viewLifecycleOwner)
+            }
+        }
+
+        return ComposeView(requireContext()).apply {
+            setContent {
+                FirefoxTheme {
+                    ScreenContent()
+                }
             }
         }
     }
@@ -293,6 +313,9 @@ class OnboardingFragment : Fragment() {
                     hasMadeMarketingTelemetrySelection = true
                 }
                 telemetryRecorder.onMarketingDataContinueClicked(allowMarketingDataCollection)
+            },
+            currentIndex = { index ->
+                removeMarketingPage.currentPageIndex = index
             },
             onCustomizeThemeClick = {
                 telemetryRecorder.onSelectThemeClick(
