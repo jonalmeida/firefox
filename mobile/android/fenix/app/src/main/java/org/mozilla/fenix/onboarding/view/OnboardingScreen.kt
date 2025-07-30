@@ -25,6 +25,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -37,8 +38,10 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.PreviewLightDark
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.LocalLifecycleOwner
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import mozilla.components.lib.state.ext.observeAsComposableState
 import org.mozilla.fenix.R
 import org.mozilla.fenix.components.appstate.AppAction
@@ -109,36 +112,51 @@ fun OnboardingScreen(
     val isWidgetPinnedState by widgetPinnedFlow.collectAsState()
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
+    val settings = context.settings()
 
-    DisposableEffect(lifecycleOwner) {
-        val settings = context.settings()
-        val isNotPartnershipDistribution = !context.components.distributionIdManager.isPartnershipDistribution()
+    var isNotPartnershipDistribution by remember { mutableStateOf<Boolean?>(null) }
 
-        // Observe the shouldShowMarketingOnboarding preference and disable the marketing page
-        // if the preference switches to false
-        val listener = SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
-            val marketingPageIndex = pagesToDisplay.indexOfFirst { it.type == OnboardingPageUiData.Type.MARKETING_DATA }
-            val shouldShowMarketingPreferenceKey = context.getString(R.string.pref_key_should_show_marketing_onboarding)
-            val removeMarketingPage = key == shouldShowMarketingPreferenceKey &&
-                !settings.shouldShowMarketingOnboarding &&
-                pagerState.currentPage < marketingPageIndex &&
-                isNotPartnershipDistribution
+    // Check if partnership distribution inside a coroutine to ensure we don't block the
+    // main thread.
+    LaunchedEffect(Unit) {
+        val result = withContext(Dispatchers.IO) {
+            !context.components.distributionIdManager.isPartnershipDistribution()
+        }
 
-            if (removeMarketingPage) {
-                pagesToDisplay.removeAt(marketingPageIndex)
+        isNotPartnershipDistribution = result
+    }
+
+    isNotPartnershipDistribution?.let { notPartnership ->
+        DisposableEffect(lifecycleOwner) {
+            // Observe the shouldShowMarketingOnboarding preference and disable the marketing page
+            // if the preference switches to false
+            val listener = SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
+                val marketingPageIndex = pagesToDisplay.indexOfFirst {
+                    it.type == OnboardingPageUiData.Type.MARKETING_DATA
+                }
+                val shouldShowMarketingPreferenceKey =
+                    context.getString(R.string.pref_key_should_show_marketing_onboarding)
+                val removeMarketingPage = key == shouldShowMarketingPreferenceKey &&
+                        !settings.shouldShowMarketingOnboarding &&
+                        pagerState.currentPage < marketingPageIndex &&
+                        notPartnership
+
+                if (removeMarketingPage) {
+                    pagesToDisplay.removeAt(marketingPageIndex)
+                }
             }
-        }
 
-        settings.preferences.registerOnSharedPreferenceChangeListener(listener)
+            settings.preferences.registerOnSharedPreferenceChangeListener(listener)
 
-        // If the preference is already false, disable the marketing page
-        if (!settings.shouldShowMarketingOnboarding && isNotPartnershipDistribution) {
-            val marketingPage = pagesToDisplay.find { it.type == OnboardingPageUiData.Type.MARKETING_DATA }
-            marketingPage?.let { pagesToDisplay.remove(it) }
-        }
+            // If the preference is already false, disable the marketing page
+            if (!settings.shouldShowMarketingOnboarding && notPartnership) {
+                val marketingPage = pagesToDisplay.find { it.type == OnboardingPageUiData.Type.MARKETING_DATA }
+                marketingPage?.let { pagesToDisplay.remove(it) }
+            }
 
-        onDispose {
-            settings.preferences.unregisterOnSharedPreferenceChangeListener(listener)
+            onDispose {
+                settings.preferences.unregisterOnSharedPreferenceChangeListener(listener)
+            }
         }
     }
 
