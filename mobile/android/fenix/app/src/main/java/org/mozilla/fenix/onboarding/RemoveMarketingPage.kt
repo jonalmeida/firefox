@@ -33,6 +33,7 @@ class RemoveMarketingPage(
     override fun start() {
         job = lifecycleOwner.lifecycleScope.launch(ioContext) {
             val isPartnership = distributionIdManager.isPartnershipDistribution()
+            println("Jono: got partnership: $isPartnership")
 
             settings.preferences.flowScopedBooleanPreference(
                 lifecycleOwner,
@@ -41,6 +42,7 @@ class RemoveMarketingPage(
             )
                 .distinctUntilChanged()
                 .collect { shouldShowMarketingOnboarding ->
+                    println("Jono: pref value: $shouldShowMarketingOnboarding")
                     if (!shouldShowMarketingOnboarding && !isPartnership) {
                         pagesToDisplay.removeIfPageNotReached(currentPageIndex)
                     }

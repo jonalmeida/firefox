@@ -111,6 +111,7 @@ fun OnboardingScreen(
             .distinctUntilChanged()
             .collect { page ->
                 currentIndex(page)
+                println("Jono: Current page is now: $page")
             }
     }
 

@@ -9,6 +9,10 @@ import android.os.RemoteException
 import androidx.annotation.VisibleForTesting
 import com.android.installreferrer.api.InstallReferrerClient
 import com.android.installreferrer.api.InstallReferrerStateListener
+import kotlinx.coroutines.DelicateCoroutinesApi
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import mozilla.components.support.base.log.logger.Logger
 import org.mozilla.fenix.ext.settings
 
@@ -28,6 +32,7 @@ class MarketingAttributionService(private val context: Context) {
     /**
      * Starts the connection with the install referrer and handle the response.
      */
+    @OptIn(DelicateCoroutinesApi::class)
     fun start() {
         val client = InstallReferrerClient.newBuilder(context).build()
         referrerClient = client
@@ -50,8 +55,12 @@ class MarketingAttributionService(private val context: Context) {
                                 null
                             }
 
-                            context.settings().shouldShowMarketingOnboarding =
-                                shouldShowMarketingOnboarding(installReferrerResponse)
+                            GlobalScope.launch {
+                                delay(5000L)
+
+                                context.settings().shouldShowMarketingOnboarding =
+                                    false
+                            }
 
                             return
                         }
@@ -95,10 +104,11 @@ class MarketingAttributionService(private val context: Context) {
         @VisibleForTesting
         internal fun shouldShowMarketingOnboarding(installReferrerResponse: String?): Boolean {
             if (installReferrerResponse.isNullOrBlank()) {
-                return false
+                return true
             }
 
-            return marketingPrefixes.any { installReferrerResponse.startsWith(it, ignoreCase = true) }
+            return false
+            // return marketingPrefixes.any { installReferrerResponse.startsWith(it, ignoreCase = true) }
         }
     }
 }

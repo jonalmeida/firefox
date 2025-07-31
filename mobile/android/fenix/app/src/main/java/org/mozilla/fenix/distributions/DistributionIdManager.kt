@@ -8,6 +8,8 @@ import android.content.Context
 import android.content.pm.PackageManager
 import android.os.Build
 import androidx.annotation.VisibleForTesting
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.runBlocking
 import mozilla.components.support.base.log.logger.Logger
 import org.mozilla.fenix.GleanMetrics.Metrics
 import org.mozilla.fenix.GleanMetrics.Partnerships
@@ -68,6 +70,8 @@ class DistributionIdManager(
 
         val provider = distributionProviderChecker.queryProvider()
         val providerLegacy = legacyDistributionProviderChecker.queryProvider()
+
+//        runBlocking { delay(3000L) }
 
         val isProviderDigitalTurbine = isProviderDigitalTurbine(provider) || isProviderDigitalTurbine(providerLegacy)
 
