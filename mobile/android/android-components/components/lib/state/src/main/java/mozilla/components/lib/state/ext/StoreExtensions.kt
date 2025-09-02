@@ -119,6 +119,7 @@ fun <S : State, A : Action> Store<S, A>.channel(
     val channel = Channel<S>(Channel.CONFLATED)
 
     val subscription = observeManually { state ->
+//        channel.trySend(state)
         runBlocking {
             try {
                 channel.send(state)
@@ -171,6 +172,7 @@ fun <S : State, A : Action> Store<S, A>.flow(
         owner?.lifecycle?.removeObserver(ownerDestroyedObserver)
 
         val subscription = observeManually { state ->
+//            trySend(state)
             runBlocking {
                 try {
                     send(state)

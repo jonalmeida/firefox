@@ -7,7 +7,9 @@ package mozilla.components.lib.state
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.launch
+import mozilla.components.lib.state.ext.flow
 import mozilla.components.support.test.rule.MainCoroutineRule
 import mozilla.components.support.test.rule.runTestOnMain
 import org.junit.Assert.assertEquals
@@ -119,5 +121,46 @@ class UiStoreTest {
         )
 
         store.dispatch(TestAction.DoNothingAction)
+    }
+
+    @Test
+    fun `simulate thread contention from a cyclical dependencies`() = runTestOnMain {
+        // A store that you can observe from a second store's middleware.
+        val store = Store(
+            TestState(counter = 23),
+            ::reducer,
+        )
+
+        val testMiddleware: Middleware<TestState, TestAction> = { context, next, action ->
+            when (action) {
+                is TestAction.IncrementAction -> {
+                    next(action)
+                    MainScope().launch {
+                        store.flow().collect {
+                            context.dispatch(TestAction.IncrementAction)
+                        }
+                    }
+                }
+
+                else -> next(action)
+            }
+        }
+
+        val store2 = UiStore(
+            TestState(counter = 23),
+            ::reducer,
+            middleware = listOf(
+                // You need at least two middlewares that have nested observers in-order for the
+                // looping to reach into a lock contention.
+                // With `trySend` you will reach the same failure as having one middleware: an OOM.
+                testMiddleware,
+                testMiddleware,
+            ),
+        ).also { uiStore ->
+            // This triggers the loop, but its the two middlewares above that reach lock contention.
+            uiStore.dispatch(TestAction.IncrementAction)
+        }
+
+        assertTrue(true)
     }
 }
