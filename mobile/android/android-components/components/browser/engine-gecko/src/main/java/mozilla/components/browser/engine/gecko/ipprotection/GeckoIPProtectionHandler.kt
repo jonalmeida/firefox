@@ -8,7 +8,9 @@ import androidx.annotation.OptIn
 import mozilla.components.ExperimentalAndroidComponentsApi
 import mozilla.components.concept.engine.ipprotection.IPProtectionHandler
 import org.mozilla.geckoview.ExperimentalGeckoViewApi
+import org.mozilla.geckoview.GeckoResult
 import org.mozilla.geckoview.GeckoRuntime
+import org.mozilla.geckoview.IPProtectionController
 
 @OptIn(ExperimentalGeckoViewApi::class)
 @kotlin.OptIn(ExperimentalAndroidComponentsApi::class)
@@ -37,5 +39,16 @@ internal class GeckoIPProtectionHandler(
         onInitialState: ((IPProtectionHandler.StateInfo) -> Unit)?,
     ) {
         // waiting for bug 2020725
+        runtime.ipProtectionController.setAuthProvider(
+            object : IPProtectionController.AuthProvider {
+                override fun getToken(): GeckoResult<String?> {
+                    val result = GeckoResult<String?>()
+                    provider?.getToken { token ->
+                        result.complete(token)
+                    }
+                    return result
+                }
+            },
+        )
     }
 }

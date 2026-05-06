@@ -13,16 +13,4 @@ interface IPProtectionFeature {
 
     /** Deactivates the IP protection proxy */
     fun deactivate()
-
-    /** Starts the enrollment for eligible users  */
-    fun beginEnrollment()
-
-    /**
-     * Re-fires the token provider to trigger a fresh Guardian entitlement check.
-     * Called after the enrollment tab completes successfully.
-     *
-     * Might need to remove it; might have added it as a workaround for not
-     * very straightforward bridge to the toolkit code.
-     */
-    fun retriggerEnrollment()
 }

@@ -671,8 +671,6 @@ open class FenixApplication : Application(), Provider, ThemeProvider {
                 lifecycleOwner = ProcessLifecycleOwner.get(),
             ),
             store = components.ipProtectionStore,
-            browserStore = components.core.store,
-            tabsUseCases = components.useCases.tabsUseCases,
         ).start()
     }
 
