@@ -6,6 +6,7 @@ package mozilla.components.feature.ipprotection
 
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -42,19 +43,34 @@ class DefaultIPProtectionFeature(
     private var handler: IPProtectionHandler? = null
 
     private val accountObserver = object : AccountObserver {
+        override fun onReady(authenticatedAccount: OAuthAccount?) {
+            scope.launch {
+                handler?.notifyAccountStatus(true)
+            }
+        }
+
         override fun onAuthenticated(account: OAuthAccount, authType: AuthType) {
             store.dispatch(IPProtectionAction.AccountStateChanged(isSignedIn = true))
-            scope.launch { setTokenProvider(account) }
+            scope.launch {
+                setTokenProvider(account)
+                handler?.enroll()
+            }
         }
 
         override fun onLoggedOut() {
             store.dispatch(IPProtectionAction.AccountStateChanged(isSignedIn = false))
-            scope.launch { handler?.setTokenProvider(null) }
+            scope.launch {
+                handler?.setAuthProvider(null)
+                handler?.notifyAccountStatus(false)
+            }
         }
 
         override fun onAuthenticationProblems() {
             store.dispatch(IPProtectionAction.AccountStateChanged(isSignedIn = false))
-            scope.launch { handler?.setTokenProvider(null) }
+            scope.launch {
+                handler?.setAuthProvider(null)
+                handler?.notifyAccountStatus(false)
+            }
         }
     }
 
@@ -88,51 +104,45 @@ class DefaultIPProtectionFeature(
     }
 
     private fun setUpProxy() {
-        handler = engine.registerIPProtectionDelegate(object : IPProtectionDelegate {
-            override fun onStateChanged(info: IPProtectionHandler.StateInfo) {
-                logger.debug("onStateChanged: proxyState = $info")
-                store.dispatch(IPProtectionAction.EngineStateChanged(info))
-            }
-        })
+        handler = engine.registerIPProtectionDelegate(
+            object : IPProtectionDelegate {
+                override fun onStateChanged(info: IPProtectionHandler.StateInfo) {
+                    logger.debug("onStateChanged: proxyState = $info")
+                    store.dispatch(IPProtectionAction.EngineStateChanged(info))
+                }
+            },
+        )
+        handler?.init()
 
         lazyAccountManager.value.register(accountObserver)
-
-        val account = lazyAccountManager.value.authenticatedAccount()
-        // NB: this is possibly a footgun, refactoring tracked in
-        // https://bugzilla.mozilla.org/show_bug.cgi?id=2035937
-        if (account != null) {
-            setTokenProvider(account)
-        } else {
-            handler?.setTokenProvider(null)
-        }
     }
 
     private fun tearDownProxy() {
         lazyAccountManager.value.unregister(accountObserver)
         engine.unregisterIPProtectionDelegate()
-        handler?.setTokenProvider(null)
+        handler?.setAuthProvider(null)
         handler = null
     }
 
-    override fun activate() { handler?.activate() }
+    override fun activate() {
+        handler?.activate()
+    }
 
-    override fun deactivate() { handler?.deactivate() }
+    override fun deactivate() {
+        handler?.deactivate()
+    }
 
     private fun setTokenProvider(account: OAuthAccount) {
-        handler?.setTokenProvider(
-            provider = object : IPProtectionHandler.TokenProvider {
+        handler?.setAuthProvider(
+            provider = object : IPProtectionHandler.AuthProvider {
                 override fun getToken(onComplete: (String?) -> Unit) {
                     scope.launch {
                         val tokenInfo = withContext(Dispatchers.IO) {
-                            runCatching { account.getAccessToken(TOKEN_SCOPE) }.getOrNull()
+                            account.getAccessToken(TOKEN_SCOPE)
                         }
                         onComplete(tokenInfo?.token)
                     }
                 }
-            },
-            onInitialState = { info ->
-                logger.debug("setTokenProvider result: serviceState = $info")
-                store.dispatch(IPProtectionAction.EngineStateChanged(info))
             },
         )
     }

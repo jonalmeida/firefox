@@ -765,6 +765,7 @@ class MenuDialogFragment : BottomSheetDialogFragment() {
                                     },
                                     onIPProtectionClick = {
                                         // will be implemented in https://bugzilla.mozilla.org/show_bug.cgi?id=2030143
+                                        components.ipProtectionFeature.activate()
                                     },
                                     onIPProtectionNavigate = {
                                         store.dispatch(MenuAction.Navigate.IPProtectionSettings)

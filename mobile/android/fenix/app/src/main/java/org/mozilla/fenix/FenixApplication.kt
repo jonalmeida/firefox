@@ -661,17 +661,7 @@ open class FenixApplication : Application(), Provider, ThemeProvider {
     }
 
     private fun maybeSetupIPProtection() {
-        DefaultIPProtectionFeature(
-            engine = components.core.engine,
-            lazyAccountManager = lazy { components.backgroundServices.accountManager },
-            storage = FenixIPProtectionEligibilityStorage(
-                browserStore = components.core.store,
-                sharedPref = components.settings.preferences,
-                prefKey = this.getString(R.string.pref_key_enable_ip_protection),
-                lifecycleOwner = ProcessLifecycleOwner.get(),
-            ),
-            store = components.ipProtectionStore,
-        ).start()
+        components.ipProtectionFeature.start()
     }
 
     private fun setupCrashReporting(): CrashReporter {

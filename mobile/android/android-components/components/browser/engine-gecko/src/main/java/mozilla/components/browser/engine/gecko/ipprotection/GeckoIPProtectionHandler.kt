@@ -34,11 +34,9 @@ internal class GeckoIPProtectionHandler(
         runtime.ipProtectionController.init()
     }
 
-    override fun setTokenProvider(
-        provider: IPProtectionHandler.TokenProvider?,
-        onInitialState: ((IPProtectionHandler.StateInfo) -> Unit)?,
+    override fun setAuthProvider(
+        provider: IPProtectionHandler.AuthProvider?,
     ) {
-        // waiting for bug 2020725
         runtime.ipProtectionController.setAuthProvider(
             object : IPProtectionController.AuthProvider {
                 override fun getToken(): GeckoResult<String?> {
@@ -50,5 +48,9 @@ internal class GeckoIPProtectionHandler(
                 }
             },
         )
+    }
+
+    override fun notifyAccountStatus(signedIn: Boolean) {
+        runtime.ipProtectionController.notifySignInStateChanged(signedIn)
     }
 }

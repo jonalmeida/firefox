@@ -10,6 +10,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.ui.platform.LocalContext
 import androidx.core.app.NotificationManagerCompat
+import androidx.lifecycle.ProcessLifecycleOwner
 import com.google.android.play.core.review.ReviewManagerFactory
 import mozilla.components.concept.ai.controls.AIFeatureBlock
 import mozilla.components.concept.ai.controls.AIFeatureRegistry
@@ -18,6 +19,7 @@ import mozilla.components.feature.addons.amo.AMOAddonsProvider
 import mozilla.components.feature.addons.migration.DefaultSupportedAddonsChecker
 import mozilla.components.feature.addons.update.DefaultAddonUpdater
 import mozilla.components.feature.autofill.AutofillConfiguration
+import mozilla.components.feature.ipprotection.DefaultIPProtectionFeature
 import mozilla.components.feature.ipprotection.IPProtectionStore
 import mozilla.components.feature.summarize.PageSummaryFeature
 import mozilla.components.feature.summarize.settings.SummarizationSettings
@@ -56,6 +58,7 @@ import org.mozilla.fenix.components.appstate.AppState
 import org.mozilla.fenix.components.appstate.setup.checklist.SetupChecklistState
 import org.mozilla.fenix.components.appstate.setup.checklist.getSetupChecklistCollection
 import org.mozilla.fenix.components.appstate.sports.SportsWidgetState
+import org.mozilla.fenix.components.ipprotection.FenixIPProtectionEligibilityStorage
 import org.mozilla.fenix.components.llm.Llm
 import org.mozilla.fenix.components.llm.ext.accessTokenProvider
 import org.mozilla.fenix.components.metrics.MetricsMiddleware
@@ -475,6 +478,20 @@ class Components(private val context: Context) {
     }
 
     val clientUUID by lazyMonitored { ClientUUID.build(context) }
+
+    val ipProtectionFeature by lazyMonitored {
+        DefaultIPProtectionFeature(
+            engine = core.engine,
+            lazyAccountManager = lazy { backgroundServices.accountManager },
+            storage = FenixIPProtectionEligibilityStorage(
+                browserStore = core.store,
+                sharedPref = settings.preferences,
+                prefKey = context.getString(R.string.pref_key_enable_ip_protection),
+                lifecycleOwner = ProcessLifecycleOwner.get(),
+            ),
+            store = ipProtectionStore,
+        )
+    }
 }
 
 /**

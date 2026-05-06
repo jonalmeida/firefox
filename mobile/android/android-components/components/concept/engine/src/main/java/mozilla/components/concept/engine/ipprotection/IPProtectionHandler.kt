@@ -35,22 +35,25 @@ interface IPProtectionHandler {
     fun init()
 
     /**
-     * Sets the [TokenProvider] used to supply authentication tokens to the IP protection service.
+     * Sets the [AuthProvider] used to supply authentication tokens to the IP protection service.
      * Pass null to sign out.
      *
-     * @param provider The [TokenProvider], or null to deauthenticate.
-     * @param onInitialState Called with the state resolved after the token provider is set.
+     * @param provider The [AuthProvider], or null to deauthenticate.
      */
-    fun setTokenProvider(
-        provider: TokenProvider?,
-        onInitialState: ((StateInfo) -> Unit)? = null,
+    fun setAuthProvider(
+        provider: AuthProvider?,
     )
+
+    /**
+     * TODO
+     */
+    fun notifyAccountStatus(signedIn: Boolean)
 
     /**
      * Provides a fresh authentication token on demand. Invoked each time the engine needs to
      * authenticate with the Guardian API.
      */
-    interface TokenProvider {
+    interface AuthProvider {
         /**
          * Fetches a fresh authentication token and delivers it via [onComplete].
          * Pass null to [onComplete] if the token could not be obtained.
