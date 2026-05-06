@@ -777,6 +777,10 @@ function startup() {
     InitLater(() =>
       Services.obs.notifyObservers(window, "browser-delayed-startup-finished")
     );
+    InitLater(() =>
+      // Make this `geckoview-sessionstore-windows-restored` so we don't start-up other browser/toolkit things we don't want to start.
+      Services.obs.notifyObservers(window, "sessionstore-windows-restored")
+    );
 
     // Let the extension code know it can start loading things that were delayed
     // while GeckoView started up.

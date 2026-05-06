@@ -61,6 +61,7 @@ class IPPStartupCacheSingleton {
     dump(`IPPC: IPPStartupCacheSingleton continue 2!`)
 
     Services.obs.addObserver(this, "sessionstore-windows-restored");
+    Services.obs.addObserver(this, "geckoview-sessionstore-windows-restored");
   }
 
   init() {
@@ -119,6 +120,7 @@ class IPPStartupCacheSingleton {
     dump(`IPPC: we observed a sessionstore-windows-restored`);
 
     Services.obs.removeObserver(this, "sessionstore-windows-restored");
+    Services.obs.removeObserver(this, "geckoview-sessionstore-windows-restored");
     this.#startupCompleted = true;
     this.#stateFromCache = null;
 
