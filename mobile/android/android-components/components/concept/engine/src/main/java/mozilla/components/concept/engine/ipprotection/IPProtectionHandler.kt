@@ -24,6 +24,12 @@ interface IPProtectionHandler {
     fun deactivate()
 
     /**
+     * Triggers enrollment via the active auth provider. Fire-and-forget; observe state changes
+     * through the [IPProtectionDelegate].
+     */
+    fun enroll()
+
+    /**
      * Initializes the proxy state machine.
      */
     fun init()

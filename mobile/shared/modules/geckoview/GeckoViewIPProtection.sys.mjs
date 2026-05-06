@@ -151,6 +151,23 @@ export const GeckoViewIPProtection = {
           });
         break;
       }
+      case "GeckoView:IPProtection:Enroll": {
+        lazy.IPProtectionService.authProvider
+          .enroll()
+          .then(({ isEnrolledAndEntitled, error } = {}) => {
+            if (isEnrolledAndEntitled) {
+              aCallback.onSuccess();
+            } else {
+              aCallback.onError(error ?? "generic-error");
+            }
+          })
+          .catch(err => {
+            aCallback.onError(
+              typeof err === "string" ? err : (err?.message ?? "generic-error")
+            );
+          });
+        break;
+      }
       case "GeckoView:IPProtection:Deactivate": {
         lazy.IPPProxyManager.stop()
           .then(() => {

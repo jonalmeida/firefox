@@ -371,6 +371,26 @@ public class IPProtectionController {
   }
 
   /**
+   * Triggers enrollment via the active auth provider.
+   *
+   * @return A {@link GeckoResult} that resolves when enrollment completes successfully, or rejects
+   *     with an {@link IPProxyException} describing the failure.
+   */
+  @HandlerThread
+  public @NonNull GeckoResult<Void> enroll() {
+    ThreadUtils.assertOnHandlerThread();
+    return EventDispatcher.getInstance()
+        .queryVoid("GeckoView:IPProtection:Enroll")
+        .map(
+            null,
+            e ->
+                IPProxyException.fromErrorString(
+                    e instanceof EventDispatcher.QueryException
+                        ? ((EventDispatcher.QueryException) e).data.toString()
+                        : null));
+  }
+
+  /**
    * Deactivates the IP proxy.
    *
    * @return A {@link GeckoResult} that resolves when deactivated, or rejects with an {@link

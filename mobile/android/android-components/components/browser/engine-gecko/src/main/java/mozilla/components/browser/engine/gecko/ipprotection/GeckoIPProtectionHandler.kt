@@ -24,6 +24,10 @@ internal class GeckoIPProtectionHandler(
         runtime.ipProtectionController.deactivate()
     }
 
+    override fun enroll() {
+        runtime.ipProtectionController.enroll()
+    }
+
     override fun init() {
         runtime.ipProtectionController.init()
     }
