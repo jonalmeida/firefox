@@ -31,15 +31,18 @@ internal class GeckoIPProtectionHandler(
     }
 
     override fun init() {
+        println("IPPC: init")
         runtime.ipProtectionController.init()
     }
 
     override fun setAuthProvider(
         provider: IPProtectionHandler.AuthProvider?,
     ) {
+        println("IPPC: setAuthProvider")
         runtime.ipProtectionController.setAuthProvider(
             object : IPProtectionController.AuthProvider {
                 override fun getToken(): GeckoResult<String?> {
+                    println("IPPC: AuthProvider.getToken called")
                     val result = GeckoResult<String?>()
                     provider?.getToken { token ->
                         result.complete(token)

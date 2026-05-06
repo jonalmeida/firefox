@@ -45,6 +45,7 @@ class DefaultIPProtectionFeature(
     private val accountObserver = object : AccountObserver {
         override fun onReady(authenticatedAccount: OAuthAccount?) {
             scope.launch {
+                println("IPPC: notifyAccountStatus")
                 handler?.notifyAccountStatus(true)
             }
         }
@@ -52,7 +53,9 @@ class DefaultIPProtectionFeature(
         override fun onAuthenticated(account: OAuthAccount, authType: AuthType) {
             store.dispatch(IPProtectionAction.AccountStateChanged(isSignedIn = true))
             scope.launch {
+                println("IPPC: setAuthProvider")
                 setTokenProvider(account)
+                println("IPPC: enroll")
                 handler?.enroll()
             }
         }
@@ -133,6 +136,7 @@ class DefaultIPProtectionFeature(
     }
 
     private fun setTokenProvider(account: OAuthAccount) {
+        println("IPPC: feature setAuthProvider")
         handler?.setAuthProvider(
             provider = object : IPProtectionHandler.AuthProvider {
                 override fun getToken(onComplete: (String?) -> Unit) {

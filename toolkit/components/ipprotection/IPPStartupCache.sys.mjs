@@ -38,6 +38,7 @@ class IPPStartupCacheSingleton {
   #startupCompleted = false;
 
   constructor() {
+    dump(`IPPC: IPPStartupCacheSingleton constructed!`)
     // For XPCShell tests, the cache must be disabled.
     if (
       Services.prefs.getBoolPref("browser.ipProtection.cacheDisabled", false)
@@ -45,6 +46,7 @@ class IPPStartupCacheSingleton {
       this.#startupCompleted = true;
       return;
     }
+    dump(`IPPC: IPPStartupCacheSingleton continue 1!`)
 
     this.handleEvent = this.#handleEvent.bind(this);
 
@@ -56,10 +58,14 @@ class IPPStartupCacheSingleton {
       this.#stateFromCache = stateFromCache;
     }
 
+    dump(`IPPC: IPPStartupCacheSingleton continue 2!`)
+
     Services.obs.addObserver(this, "sessionstore-windows-restored");
   }
 
   init() {
+
+    dump(`IPPC: IPPStartupCacheSingleton continue 3!`)
     lazy.IPProtectionService.addEventListener(
       "IPProtectionService:StateChanged",
       this.handleEvent
@@ -101,12 +107,16 @@ class IPPStartupCacheSingleton {
   }
 
   async observe(_subject, topic, _) {
+    dump(`IPPC: IPPStartupCacheSingleton continue 4!`)
     if (topic !== "sessionstore-windows-restored") {
       return;
     }
 
     // The browser is ready! Let's invalidate the cache and let's recompute the
     // state.
+
+    dump(`IPPC: IPPStartupCacheSingleton continue 5!`)
+    dump(`IPPC: we observed a sessionstore-windows-restored`);
 
     Services.obs.removeObserver(this, "sessionstore-windows-restored");
     this.#startupCompleted = true;
